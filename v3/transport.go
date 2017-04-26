@@ -37,6 +37,10 @@ type Transport struct {
 	// this Client.
 	AdditionalHeaders http.Header
 
+	// Additionalparameters allow additional paramaters to be appended to the
+	// request URL.
+	AdditionalParameters map[string]string
+
 	// Transport is the HTTP transport to use when making requests.
 	// It will default to http.DefaultTransport if nil.
 	Transport http.RoundTripper
@@ -71,9 +75,16 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Accept", "application/vnd.heroku+json; version=3")
 	req.Header.Set("Request-Id", uuid.New())
 	req.SetBasicAuth(t.Username, t.Password)
+
 	for k, v := range t.AdditionalHeaders {
 		req.Header[k] = v
 	}
+
+	q := req.URL.Query()
+	for k, v := range t.AdditionalParameters {
+		q.Add(k, v)
+	}
+	req.URL.RawQuery = q.Encode()
 
 	if t.Debug {
 		dump, err := httputil.DumpRequestOut(req, true)
